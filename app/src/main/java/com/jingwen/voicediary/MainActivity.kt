@@ -52,7 +52,7 @@ private fun DiaryApp(viewModel: DiaryViewModel = viewModel()) {
             HomeScreen(diaries, showTimes,
                 onOpenDiary = { navController.navigate("detail/" + it) },
                 onNewDiary = { navController.navigate("editor") },
-                onNewQuick = { navController.navigate("editor?quick=true") },
+                onNewQuick = { navController.navigate("quick-note") },
                 onSearch = { navController.navigate("search") },
                 onSettings = { navController.navigate("settings") })
         }
@@ -81,7 +81,11 @@ private fun DiaryApp(viewModel: DiaryViewModel = viewModel()) {
             val id = entry.arguments?.getLong("diaryId") ?: return@composable
             DetailScreen(id, diaries, viewModel, showTimes,
                 onBack = { navController.popBackStack() },
-                onEdit = { navController.navigate("editor?diaryId=" + it) },
+                onEdit = { diaryId ->
+                    val route = if (diaries.firstOrNull { it.id == diaryId }?.entryType == "QUICK")
+                        "quick-note" else "editor"
+                    navController.navigate("$route?diaryId=$diaryId")
+                },
                 onOpenDiary = { nextId ->
                     navController.navigate("detail/" + nextId) {
                         // Replace the current detail so repeated paging does not grow the back stack.
@@ -97,7 +101,20 @@ private fun DiaryApp(viewModel: DiaryViewModel = viewModel()) {
             val id = entry.arguments?.getLong("diaryId")?.takeIf { it != 0L }
             val quick = entry.arguments?.getBoolean("quick") ?: false
             val editor: EditorViewModel = viewModel(viewModelStoreOwner = entry)
-            EditorScreen(id, viewModel, editor, quick, onBack = { navController.popBackStack() })
+            if (quick) {
+                val composer: QuickNoteViewModel = viewModel(viewModelStoreOwner = entry)
+                QuickNoteScreen(id, composer, onBack = { navController.popBackStack() })
+            } else {
+                EditorScreen(id, viewModel, editor, onBack = { navController.popBackStack() })
+            }
+        }
+        composable("quick-note?diaryId={diaryId}", arguments = listOf(navArgument("diaryId") {
+            type = NavType.LongType
+            defaultValue = 0L
+        })) { entry ->
+            val id = entry.arguments?.getLong("diaryId")?.takeIf { it != 0L }
+            val composer: QuickNoteViewModel = viewModel(viewModelStoreOwner = entry)
+            QuickNoteScreen(id, composer, onBack = { navController.popBackStack() })
         }
     }
 }
