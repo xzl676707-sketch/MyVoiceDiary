@@ -102,6 +102,32 @@ object StickerCatalog {
 
     val all: List<StickerAsset> by lazy { packs.flatMap { it.stickers } }
 
+    /** Local-only hints; never edits the diary or sends its text anywhere. */
+    fun recommend(text: String): List<StickerAsset> {
+        val recent = readableText(text).takeLast(500).lowercase()
+        if (recent.isBlank()) return emptyList()
+        val rules = listOf(
+            "心碎|分手|失恋" to "bunny-heartbroken", "崩溃|大哭" to "bunny-breakdown",
+            "心累|疲惫|好累" to "bunny-drained", "压力|焦虑|紧张" to "bunny-pressure",
+            "躺平|摆烂" to "bunny-flat", "难过|委屈|伤心" to "bunny-sad",
+            "想念|思念|想你" to "bunny-missing", "失眠|睡不着" to "bunny-insomnia",
+            "生病|发烧|感冒" to "bunny-sick", "生气|愤怒|气死" to "bunny-angry",
+            "开心|高兴|快乐" to "bunny-happy", "加油|努力|坚持" to "bunny-cheer",
+            "谢谢|感谢|感激" to "bunny-thanks", "抱抱|安慰" to "bunny-hug",
+            "晚安|好梦" to "bunny-goodnight", "喜欢|爱你|恋爱" to "cat-love",
+            "学习|复习|看书" to "cat-study", "作业|考试|赶稿" to "cat-deadline",
+            "奶茶|咖啡" to "cat-bubble_tea", "吃饭|美食|好吃" to "cat-meal",
+            "运动|健身|跑步" to "cat-workout", "追剧|电影" to "cat-drama",
+            "游戏|打游戏" to "cat-gaming", "购物|买买买" to "cat-shopping",
+            "快递|包裹" to "cat-parcel", "困|想睡|起不来" to "cat-sleepy",
+            "休息|充电" to "cat-recharge", "完成|成功|搞定" to "cat-celebrate_task"
+        )
+        return rules.mapNotNull { (words, id) ->
+            val lastPosition = words.split('|').maxOf { recent.lastIndexOf(it) }
+            if (lastPosition < 0) null else all.firstOrNull { it.id == id }?.let { lastPosition to it }
+        }.sortedByDescending { it.first }.map { it.second }.distinctBy { it.id }.take(4)
+    }
+
     fun fromInlineChar(value: Char): StickerAsset? = all.firstOrNull { it.inlineChar == value }
 
     fun fromLegacyLabel(label: String): StickerAsset? = all.firstOrNull { it.label == label }

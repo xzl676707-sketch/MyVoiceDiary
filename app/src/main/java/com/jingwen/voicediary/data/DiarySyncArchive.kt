@@ -175,13 +175,15 @@ class DiarySyncArchive(private val context: Context, private val dao: DiaryDao) 
         put("layoutJson", layoutJson); put("coverThumbnailName", coverThumbnailName)
         put("coverMediaType", coverMediaType); put("mediaCount", mediaCount)
         put("diaryDate", diaryDate); put("createdAt", createdAt); put("updatedAt", updatedAt)
+        put("entryType", entryType)
     }
 
     private fun JSONObject.toDiary() = DiaryEntity(
         id = getLong("id"), uuid = getString("uuid"), title = getString("title"), content = getString("content"),
         layoutJson = getString("layoutJson"), coverThumbnailName = getString("coverThumbnailName"),
         coverMediaType = getString("coverMediaType"), mediaCount = getInt("mediaCount"),
-        diaryDate = getString("diaryDate"), createdAt = getLong("createdAt"), updatedAt = getLong("updatedAt")
+        diaryDate = getString("diaryDate"), createdAt = getLong("createdAt"), updatedAt = getLong("updatedAt"),
+        entryType = optString("entryType", "DIARY")
     )
 
     private fun DiaryMediaEntity.toJson() = JSONObject().apply {

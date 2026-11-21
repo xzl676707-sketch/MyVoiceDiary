@@ -52,11 +52,14 @@ fun DiaryCard(diary: DiaryEntity, onClick: () -> Unit, modifier: Modifier = Modi
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Column(Modifier.weight(1f)) {
-            Text(previewText(diary.title, diary.content), fontSize = 18.sp, lineHeight = 24.sp,
+            if (diary.entryType == "QUICK") {
+                Text("✦ 随手记", color = Rose, fontSize = 11.sp, modifier = Modifier.padding(bottom = 5.dp))
+            }
+            Text(if (diary.entryType == "QUICK" && diary.content.isBlank()) "拍下这一刻" else previewText(diary.title, diary.content), fontSize = 18.sp, lineHeight = 24.sp,
                 fontFamily = FontFamily.Serif, color = CardTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(6.dp))
-            Text(StickerCatalog.readableText(diary.content), color = CardBody, fontSize = 13.sp, lineHeight = 21.5.sp,
-                maxLines = 3, overflow = TextOverflow.Ellipsis)
+            if (diary.content.isNotBlank()) Text(StickerCatalog.readableText(diary.content), color = CardBody,
+                fontSize = 13.sp, lineHeight = 21.5.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
         }
         if (diary.coverThumbnailName.isNotBlank()) {
             val context = LocalContext.current

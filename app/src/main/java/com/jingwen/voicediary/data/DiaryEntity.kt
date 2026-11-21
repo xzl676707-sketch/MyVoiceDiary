@@ -19,6 +19,7 @@ data class DiaryEntity(
     val coverThumbnailName: String = "",
     val coverMediaType: String = "",
     val mediaCount: Int = 0,
+    val entryType: String = "DIARY",
     /** ISO-8601 date, for example 2026-09-16. */
     val diaryDate: String,
     val createdAt: Long,

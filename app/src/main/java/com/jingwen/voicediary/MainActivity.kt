@@ -52,6 +52,7 @@ private fun DiaryApp(viewModel: DiaryViewModel = viewModel()) {
             HomeScreen(diaries, showTimes,
                 onOpenDiary = { navController.navigate("detail/" + it) },
                 onNewDiary = { navController.navigate("editor") },
+                onNewQuick = { navController.navigate("editor?quick=true") },
                 onSearch = { navController.navigate("search") },
                 onSettings = { navController.navigate("settings") })
         }
@@ -89,13 +90,14 @@ private fun DiaryApp(viewModel: DiaryViewModel = viewModel()) {
                     }
                 })
         }
-        composable("editor?diaryId={diaryId}", arguments = listOf(navArgument("diaryId") {
+        composable("editor?diaryId={diaryId}&quick={quick}", arguments = listOf(navArgument("diaryId") {
             type = NavType.LongType
             defaultValue = 0L
-        })) { entry ->
+        }, navArgument("quick") { type = NavType.BoolType; defaultValue = false })) { entry ->
             val id = entry.arguments?.getLong("diaryId")?.takeIf { it != 0L }
+            val quick = entry.arguments?.getBoolean("quick") ?: false
             val editor: EditorViewModel = viewModel(viewModelStoreOwner = entry)
-            EditorScreen(id, viewModel, editor, onBack = { navController.popBackStack() })
+            EditorScreen(id, viewModel, editor, quick, onBack = { navController.popBackStack() })
         }
     }
 }

@@ -42,6 +42,7 @@ fun HomeScreen(
     showTimes: Boolean,
     onOpenDiary: (Long) -> Unit,
     onNewDiary: () -> Unit,
+    onNewQuick: () -> Unit,
     onSearch: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier
@@ -102,6 +103,18 @@ fun HomeScreen(
                             fontFamily = FontFamily.Serif)
                         Text("用文字和影像 · 记录此刻", color = Color.White.copy(alpha = 0.86f),
                             fontSize = 12.sp, letterSpacing = 2.sp, modifier = Modifier.padding(top = 3.dp))
+                    }
+                }
+                Row(Modifier.fillMaxWidth().padding(top = 12.dp)
+                    .clip(RoundedCornerShape(20.dp)).background(Color.White.copy(alpha = 0.82f))
+                    .border(1.dp, Rose.copy(alpha = 0.22f), RoundedCornerShape(20.dp))
+                    .clickable(onClick = onNewQuick).padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.AddAPhoto, "随手记", Modifier.size(24.dp), tint = Rose)
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text("发一条随手记 ›", color = DeepRose, fontSize = 17.sp)
+                        Text("拍一张、写几句，像朋友圈一样记录此刻", color = MutedBrown, fontSize = 11.sp)
                     }
                 }
                 Spacer(Modifier.height(24.dp))

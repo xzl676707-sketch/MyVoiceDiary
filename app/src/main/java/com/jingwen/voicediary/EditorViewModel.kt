@@ -29,6 +29,7 @@ import kotlinx.coroutines.withContext
 
 data class EditorState(
     val id: Long? = null,
+    val entryType: String = "DIARY",
     val title: String = "",
     val content: String = "",
     val date: String = LocalDate.now().toString(),
@@ -62,13 +63,14 @@ class EditorViewModel(application: Application, private val saved: SavedStateHan
     var state by mutableStateOf(EditorState())
         private set
 
-    fun load(sourceId: Long?, diaries: DiaryViewModel) {
+    fun load(sourceId: Long?, diaries: DiaryViewModel, quick: Boolean = false) {
         if (loading || state.ready) return
         loading = true
         if (saved.get<Boolean>("ready") == true) {
             val restoredContent = saved["content"] ?: ""
             state = EditorState(
                 id = saved.get<Long>("savedId") ?: sourceId,
+                entryType = saved["entryType"] ?: if (quick) "QUICK" else "DIARY",
                 title = saved["title"] ?: "", content = restoredContent,
                 blocks = DiaryContentLayout.decode(saved["layoutJson"] ?: "", restoredContent, emptyList()),
                 date = saved["date"] ?: LocalDate.now().toString(), createdAt = saved["createdAt"] ?: 0L,
@@ -94,7 +96,7 @@ class EditorViewModel(application: Application, private val saved: SavedStateHan
                 if (sourceId != null && diary == null) {
                     state = state.copy(status = "无法打开日记", error = "日记不存在，请返回后重试。")
                 } else {
-                    state = if (diary == null) EditorState(ready = true, status = "自动保存已开启")
+                    state = if (diary == null) EditorState(entryType = if (quick) "QUICK" else "DIARY", ready = true, status = "自动保存已开启")
                     else {
                         val media = repository.getMedia(diary.id)
                         val decoded = DiaryContentLayout.decode(diary.layoutJson, diary.content, media)
@@ -103,7 +105,7 @@ class EditorViewModel(application: Application, private val saved: SavedStateHan
                             pendingMediaDeletes += migration.removedStickerMedia
                         }
                         EditorState(
-                            id = diary.id, title = diary.title,
+                            id = diary.id, title = diary.title, entryType = diary.entryType,
                             content = DiaryContentLayout.plainText(migration.blocks),
                             date = diary.diaryDate, createdAt = diary.createdAt,
                             media = media - migration.removedStickerMedia.toSet(),
@@ -250,7 +252,7 @@ class EditorViewModel(application: Application, private val saved: SavedStateHan
                 val orderedMedia = orderedMediaIds.mapNotNull { uuid -> draft.media.firstOrNull { it.mediaUuid == uuid } }
                 val id = repository.save(
                     draft.id, draft.title, DiaryContentLayout.plainText(layout), draft.date, created,
-                    DiaryContentLayout.encode(layout)
+                    DiaryContentLayout.encode(layout), draft.entryType
                 )
                 // Capture identity immediately, even if the separate decoration preference fails.
                 state = state.copy(id = id, createdAt = created)
@@ -294,6 +296,7 @@ class EditorViewModel(application: Application, private val saved: SavedStateHan
         saved["ready"] = state.ready
         saved["savedId"] = state.id
         saved["title"] = state.title
+        saved["entryType"] = state.entryType
         saved["content"] = state.content
         saved["layoutJson"] = DiaryContentLayout.encode(state.blocks)
         saved["date"] = state.date

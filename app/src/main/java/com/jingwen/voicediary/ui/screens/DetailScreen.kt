@@ -50,8 +50,8 @@ fun DetailScreen(diaryId: Long, diaries: List<DiaryEntity>, viewModel: DiaryView
     val next = if (index >= 0) ordered.getOrNull(index + 1) else null
 
     Column(Modifier.fillMaxSize().background(Cream)) {
-        SiteTopBar("日记详情", onBack, Icons.Outlined.ChevronLeft) {
-            if (diary != null) SiteButton("继续写", { onEdit(diary.id) }, filled = true)
+        SiteTopBar(if (diary?.entryType == "QUICK") "随手记" else "日记详情", onBack, Icons.Outlined.ChevronLeft) {
+            if (diary != null) SiteButton(if (diary.entryType == "QUICK") "编辑" else "继续写", { onEdit(diary.id) }, filled = true)
         }
         if (diary == null) {
             Text("日记正在读取，或已被移除。", Modifier.padding(24.dp), color = MutedBrown)
@@ -66,7 +66,7 @@ fun DetailScreen(diaryId: Long, diaries: List<DiaryEntity>, viewModel: DiaryView
                     Text("最后修改 · " + diary.modifiedDateTimeLabel(), color = MutedBrown, fontSize = 11.sp,
                         modifier = Modifier.padding(top = 4.dp))
                 }
-                SiteHeading(previewText(diary.title, diary.content), Modifier.padding(vertical = 7.dp), 26)
+                if (diary.entryType != "QUICK") SiteHeading(previewText(diary.title, diary.content), Modifier.padding(vertical = 7.dp), 26)
                 val blocks = remember(diary.layoutJson, diary.content, media) {
                     val decoded = DiaryContentLayout.decode(diary.layoutJson, diary.content, media)
                     DiaryContentLayout.migrateLegacyStickers(decoded, media).blocks

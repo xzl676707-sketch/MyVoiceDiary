@@ -1,12 +1,15 @@
 package com.jingwen.voicediary.ui.screens
 
 import android.app.DatePickerDialog
+import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -40,6 +45,7 @@ import com.jingwen.voicediary.data.DiaryMediaEntity
 import com.jingwen.voicediary.data.DiaryMediaType
 import com.jingwen.voicediary.data.mediaType
 import com.jingwen.voicediary.data.DiaryBlockType
+import com.jingwen.voicediary.data.StickerCatalog
 import com.jingwen.voicediary.data.DiaryContentBlock
 import com.jingwen.voicediary.ui.components.*
 import com.jingwen.voicediary.ui.theme.*
@@ -48,7 +54,7 @@ import com.jingwen.voicediary.ui.toLocalDateOrNull
 import java.time.LocalDate
 
 @Composable
-fun EditorScreen(diaryId: Long?, viewModel: DiaryViewModel, editor: EditorViewModel, onBack: () -> Unit) {
+fun EditorScreen(diaryId: Long?, viewModel: DiaryViewModel, editor: EditorViewModel, quick: Boolean = false, onBack: () -> Unit) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val mediaFiles = remember { DiaryMediaFiles(context.applicationContext) }
@@ -64,7 +70,7 @@ fun EditorScreen(diaryId: Long?, viewModel: DiaryViewModel, editor: EditorViewMo
         if (saved) cameraUri?.let { editor.addMedia(it, DiaryMediaType.IMAGE) }
         cameraUri = null
     }
-    LaunchedEffect(diaryId) { editor.load(diaryId, viewModel) }
+    LaunchedEffect(diaryId, quick) { editor.load(diaryId, viewModel, quick) }
     DisposableEffect(lifecycle, editor) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
@@ -87,7 +93,9 @@ fun EditorScreen(diaryId: Long?, viewModel: DiaryViewModel, editor: EditorViewMo
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
             val date = state.date.toLocalDateOrNull() ?: LocalDate.now()
-            Row(Modifier.fillMaxWidth().clickable(enabled = state.ready && !state.closing) {
+            if (state.entryType == "QUICK") Text("随手记 · 拍下此刻，写几句话", color = DeepRose,
+                fontSize = 17.sp, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
+            Row(Modifier.fillMaxWidth().clickable(enabled = state.ready && !state.closing && state.entryType != "QUICK") {
                 DatePickerDialog(context, { _, year, month, day ->
                     editor.setDate(LocalDate.of(year, month + 1, day).toString())
                 }, date.year, date.monthValue - 1, date.dayOfMonth).show()
@@ -95,7 +103,7 @@ fun EditorScreen(diaryId: Long?, viewModel: DiaryViewModel, editor: EditorViewMo
                 Icon(Icons.Outlined.Schedule, null, Modifier.size(14.dp), tint = Color(0xFFAE989C))
                 Text("  " + date.toChineseDate(), color = Color(0xFFAE989C), fontSize = 12.sp)
             }
-            BasicTextField(
+            if (state.entryType != "QUICK") BasicTextField(
                 value = state.title, onValueChange = editor::setTitle,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                 enabled = state.ready && !state.closing, singleLine = true,
@@ -171,6 +179,25 @@ fun EditorScreen(diaryId: Long?, viewModel: DiaryViewModel, editor: EditorViewMo
             state.error?.let {
                 Text(it, color = Rose, fontSize = 13.sp)
                 SiteButton("重试保存", { editor.flush() }, Modifier.padding(vertical = 8.dp))
+            }
+        }
+        val suggestions = if (state.entryType == "DIARY") StickerCatalog.recommend(state.content) else emptyList()
+        if (suggestions.isNotEmpty()) {
+            Text("根据文字推荐 · 点选才会插入", color = MutedBrown,
+                fontSize = 11.sp, modifier = Modifier.padding(start = 24.dp, top = 6.dp))
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                suggestions.forEach { sticker ->
+                    val bitmap = remember(sticker.assetPath) {
+                        context.assets.open(sticker.assetPath).use(BitmapFactory::decodeStream)
+                    }
+                    Row(Modifier.clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFFFF0F1)).clickable { editor.addSticker(sticker) }
+                        .padding(horizontal = 7.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        bitmap?.let { Image(it.asImageBitmap(), sticker.label, Modifier.size(33.dp), contentScale = ContentScale.Fit) }
+                        Text(sticker.label, color = DeepRose, fontSize = 11.sp)
+                    }
+                }
             }
         }
         HorizontalDivider(color = WarmLine)

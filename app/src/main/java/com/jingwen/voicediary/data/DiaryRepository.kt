@@ -15,7 +15,8 @@ class DiaryRepository(private val dao: DiaryDao) {
         content: String,
         diaryDate: String,
         createdAt: Long?,
-        layoutJson: String = ""
+        layoutJson: String = "",
+        entryType: String = "DIARY"
     ): Long {
         val now = System.currentTimeMillis()
         val existing = id?.takeIf { it != 0L }?.let { dao.getById(it) }
@@ -26,6 +27,7 @@ class DiaryRepository(private val dao: DiaryDao) {
                     title = title,
                     content = content,
                     layoutJson = layoutJson,
+                    entryType = entryType,
                     diaryDate = diaryDate,
                     createdAt = createdAt ?: now,
                     updatedAt = nextUpdatedAt
@@ -40,6 +42,7 @@ class DiaryRepository(private val dao: DiaryDao) {
                 title = title,
                 content = content,
                 layoutJson = layoutJson.ifBlank { existing?.layoutJson.orEmpty() },
+                entryType = existing?.entryType ?: entryType,
                 coverThumbnailName = existing?.coverThumbnailName.orEmpty(),
                 coverMediaType = existing?.coverMediaType.orEmpty(),
                 mediaCount = existing?.mediaCount ?: 0,
